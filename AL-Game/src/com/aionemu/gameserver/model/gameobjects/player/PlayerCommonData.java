@@ -18,8 +18,6 @@ package com.aionemu.gameserver.model.gameobjects.player;
 
 import java.sql.Timestamp;
 import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,12 +33,10 @@ import com.aionemu.gameserver.model.Race;
 import com.aionemu.gameserver.model.team.legion.LegionJoinRequestState;
 import com.aionemu.gameserver.model.templates.BoundRadius;
 import com.aionemu.gameserver.model.templates.VisibleObjectTemplate;
-import com.aionemu.gameserver.model.templates.event.AtreianPassport;
 import com.aionemu.gameserver.network.aion.serverpackets.SM_DP_INFO;
 import com.aionemu.gameserver.network.aion.serverpackets.SM_STATUPDATE_DP;
 import com.aionemu.gameserver.network.aion.serverpackets.SM_STATUPDATE_EXP;
 import com.aionemu.gameserver.network.aion.serverpackets.SM_SYSTEM_MESSAGE;
-import com.aionemu.gameserver.services.player.CreativityPanel.CreativityEssenceService;
 import com.aionemu.gameserver.utils.PacketSendUtility;
 import com.aionemu.gameserver.utils.stats.XPLossEnum;
 import com.aionemu.gameserver.world.World;
@@ -99,8 +95,6 @@ public class PlayerCommonData extends VisibleObjectTemplate {
 	private int fatigue = 0;
 	private int fatigueRecover = 0;
 	private int fatigueReset = 0;
-	private int stamps = 0;
-	private int passportReward = 0;
 	private int joinRequestLegionId = 0;
 	private LegionJoinRequestState joinRequestState = LegionJoinRequestState.NONE;
 	private PlayerUpgradeArcade upgradeArcade;
@@ -108,15 +102,9 @@ public class PlayerCommonData extends VisibleObjectTemplate {
 	private PlayerBonusTime bonusTime = new PlayerBonusTime();
 	private Timestamp creationDate;
 
-	public Map<Integer, AtreianPassport> playerPassports = new HashMap<Integer, AtreianPassport>(1);
-	private PlayerPassports completedPassports;
-
 	private int lunaCoins = 0;
 	private int wardrobeSize = 256;
 	private boolean GoldenStarBoost = false;
-	private boolean isHighDaeva = false;
-	private int creativityPoint;
-	private int cp_step = 0;
 	private int lunaConsumePoint;
 	private int muni_keys;
 	private int consumeCount = 0;
@@ -304,12 +292,6 @@ public class PlayerCommonData extends VisibleObjectTemplate {
 				}
 			}
 		}
-		if (this.getPlayer().getLevel() < 66) {
-			if (questId == 10521 || questId == 20521) {
-				setHighDaeva();
-				return;
-			}
-		}
 		
 		setExp(exp + reward);
 		if (this.getPlayer() != null) {
@@ -386,9 +368,6 @@ public class PlayerCommonData extends VisibleObjectTemplate {
 						break;
 					default:
 						break;
-				}
-				if (this.isHighDaeva()) {
-					CreativityEssenceService.getInstance().pointPerExp(this.getPlayer());
 				}
 			}
 		}
@@ -567,22 +546,6 @@ public class PlayerCommonData extends VisibleObjectTemplate {
 				PacketSendUtility.sendPacket(this.getPlayer(), SM_SYSTEM_MESSAGE.STR_LEVEL_LIMIT_QUEST_NOT_FINISHED1);
 			}
 		}
-		else if (this.getLevel() == 65 && !this.isHighDaeva()) {
-			boolean isCompleteQuest = false;
-			if (this.getPlayer().getRace() == Race.ELYOS) {
-				isCompleteQuest = this.getPlayer().isCompleteQuest(10520); // Covert Communiques.
-			}
-			else {
-				isCompleteQuest = this.getPlayer().isCompleteQuest(20520); // Lost Destiny.
-			}
-			if (!isCompleteQuest) {
-				maxExp = 2066885000;
-				if (this.getExp() >= 2066885000) {
-					// You can advance to level 66 only after you have completed the Transcendence quest.
-					PacketSendUtility.sendPacket(this.getPlayer(), new SM_SYSTEM_MESSAGE(1403187, "66"));
-				}
-			}
-		}
 		if (exp > maxExp) {
 			exp = maxExp;
 		}
@@ -718,18 +681,6 @@ public class PlayerCommonData extends VisibleObjectTemplate {
 	public void setLevel(int level) {
 		if (level <= DataManager.PLAYER_EXPERIENCE_TABLE.getMaxLevel()) {
 			this.setExp(DataManager.PLAYER_EXPERIENCE_TABLE.getStartExpForLevel(level));
-		}
-	}
-
-	// HighDaeva Update
-	public void setHighDaeva() {
-		this.setHighDaeva(true);
-		if (this.getLevel() < 66) {
-			this.setExp(DataManager.PLAYER_EXPERIENCE_TABLE.getStartExpForLevel(66));
-			addGrowthEnergy(1060000 * 10);
-		}
-		else if (this.getLevel() >= 66) {
-			return;
 		}
 	}
 
@@ -951,30 +902,6 @@ public class PlayerCommonData extends VisibleObjectTemplate {
 		return fatigueReset;
 	}
 
-	public int getPassportStamps() {
-		return stamps;
-	}
-
-	public void setPassportStamps(int value) {
-		this.stamps = value;
-	}
-
-	public PlayerPassports getCompletedPassports() {
-		return completedPassports;
-	}
-
-	public void setCompletedPassports(PlayerPassports pp) {
-		completedPassports = pp;
-	}
-
-	public int getPassportReward() {
-		return passportReward;
-	}
-
-	public void setPassportReward(int value) {
-		this.passportReward = value;
-	}
-
 	public int getJoinRequestLegionId() {
 		return joinRequestLegionId;
 	}
@@ -1042,36 +969,6 @@ public class PlayerCommonData extends VisibleObjectTemplate {
 
 	public void setWardrobeSize(int wardrobeSize) {
 		this.wardrobeSize = wardrobeSize;
-	}
-
-	/**
-	 * @High Daeva
-	 */
-	public void setHighDaeva(boolean isHighDaeva) {
-		this.isHighDaeva = isHighDaeva;
-	}
-
-	public boolean isHighDaeva() {
-		return isHighDaeva;
-	}
-
-	/**
-	 * @Creativity Points
-	 */
-	public int getCreativityPoint() {
-		return creativityPoint;
-	}
-
-	public void setCreativityPoint(int point) {
-		this.creativityPoint = point;
-	}
-
-	public int getCPStep() {
-		return cp_step;
-	}
-
-	public void setCPStep(int step) {
-		this.cp_step = step;
 	}
 
 	/**
